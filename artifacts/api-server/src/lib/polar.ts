@@ -1,13 +1,9 @@
 /**
  * Polar.sh checkout integration
- * Requires: POLAR_ACCESS_TOKEN env secret
- * Product ID is set via POLAR_PRODUCT_ID env var
+ * Product ID: 0358546f-1871-4769-80e7-dfcb7cddd8ab
  */
 
 const POLAR_ACCESS_TOKEN = process.env.POLAR_ACCESS_TOKEN;
-
-// NOTE: Agar aap ke paas naya Live Polar Product ID hai, toh is neeche wali line mein 
-// "0358546f-1871-4769-80e7-dfcb7cddd8ab" ko mita kar apna naya Live ID paste kar dein.
 const POLAR_PRODUCT_ID = process.env.POLAR_PRODUCT_ID ?? "0358546f-1871-4769-80e7-dfcb7cddd8ab";
 const POLAR_API = "https://api.polar.sh";
 
@@ -22,17 +18,18 @@ export async function createPolarCheckout(opts: {
   priceId?: string;
   metadata?: Record<string, string>;
 }): Promise<CreateCheckoutResult> {
-  if (!POLAR_ACCESS_TOKEN) {
-    const fallbackUrl = `https://buy.polar.sh/product/${POLAR_PRODUCT_ID}?customer_email=${encodeURIComponent(opts.email)}&metadata[planId]=${opts.planId}`;
-    console.warn("[polar] POLAR_ACCESS_TOKEN not set — returning placeholder URL");
-    return { url: fallbackUrl, id: "placeholder" };
-  }
-
-  // FIX: Replit URL ko bypass kar ke pehle Vercel aur Live Domain ko priority di hai
+  // Live Domain Setup (Replit ko bypass karke Vercel live domain)
   const APP_URL = 
     process.env.APP_URL || 
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
     "https://alerteportasplit.vercel.app";
+
+  // Agar Token na mile, to Polar ke direct hosted checkout page par bhej dega
+  if (!POLAR_ACCESS_TOKEN) {
+    const fallbackUrl = `https://buy.polar.sh/product/${POLAR_PRODUCT_ID}?customer_email=${encodeURIComponent(opts.email)}&metadata[planId]=${opts.planId}`;
+    console.warn("[polar] POLAR_ACCESS_TOKEN not set — using hosted checkout URL");
+    return { url: fallbackUrl, id: "placeholder" };
+  }
 
   const body: Record<string, unknown> = {
     product_price_id: opts.priceId,
