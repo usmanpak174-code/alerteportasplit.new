@@ -12,34 +12,21 @@ const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 // ---------------------------------------------------------------------------
-// Module-level configuration
+// 1000% PAKKA FIX: Default Base URL ko Vercel par set kar diya hai
 // ---------------------------------------------------------------------------
-
-let _baseUrl: string | null = null;
+const VERCEL_URL = "https://alerteportasplit.vercel.app";
+let _baseUrl: string | null = VERCEL_URL;
 let _authTokenGetter: AuthTokenGetter | null = null;
 
-/**
- * Set a base URL that is prepended to every relative request URL
- * (i.e. paths that start with `/`).
- *
- * Useful for Expo bundles that need to call a remote API server.
- * Pass `null` to clear the base URL.
- */
 export function setBaseUrl(url: string | null): void {
-  _baseUrl = url ? url.replace(/\/+$/, "") : null;
+  // Agar koi bhi file Replit ka link bhejne ki koshish kare, to usay block karke Vercel kar do
+  if (url && (url.includes("replit.dev") || url.includes("replit.app"))) {
+    _baseUrl = VERCEL_URL;
+  } else {
+    _baseUrl = url ? url.replace(/\/+$/, "") : VERCEL_URL;
+  }
 }
 
-/**
- * Register a getter that supplies a bearer auth token.  Before every fetch
- * the getter is invoked; when it returns a non-null string, an
- * `Authorization: Bearer <token>` header is attached to the request.
- *
- * Useful for Expo bundles making token-gated API calls.
- * Pass `null` to clear the getter.
- *
- * NOTE: This function should never be used in web applications where session
- * token cookies are automatically associated with API calls by the browser.
- */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
 }
@@ -54,15 +41,23 @@ function resolveMethod(input: RequestInfo | URL, explicitMethod?: string): strin
   return "GET";
 }
 
-// Use loose check for URL — some runtimes (e.g. React Native) polyfill URL
-// differently, so `instanceof URL` can fail.
 function isUrl(input: RequestInfo | URL): input is URL {
   return typeof URL !== "undefined" && input instanceof URL;
 }
 
 function applyBaseUrl(input: RequestInfo | URL): RequestInfo | URL {
+  let url = resolveUrl(input);
+
+  // 🔴 HARD OVERRIDE: Agar kisi bhi request mein Replit ka link nazar aaye, usay Vercel se replace kar do
+  if (url.includes("replit.dev") || url.includes("replit.app")) {
+    url = url.replace(/https?:\/\/[^/]+\.replit\.(dev|app)/g, VERCEL_URL);
+    if (typeof input === "string") return url;
+    if (isUrl(input)) return new URL(url);
+    return new Request(url, input as Request);
+  }
+
   if (!_baseUrl) return input;
-  const url = resolveUrl(input);
+  
   // Only prepend to relative paths (starting with /)
   if (!url.startsWith("/")) return input;
 
@@ -111,12 +106,6 @@ function isTextMediaType(mediaType: string | null): boolean {
   );
 }
 
-// Use strict equality: in browsers, `response.body` is `null` when the
-// response genuinely has no content.  In React Native, `response.body` is
-// always `undefined` because the ReadableStream API is not implemented —
-// even when the response carries a full payload readable via `.text()` or
-// `.json()`.  Loose equality (`== null`) matches both `null` and `undefined`,
-// which causes every React Native response to be treated as empty.
 function hasNoBody(response: Response, method: string): boolean {
   if (method === "HEAD") return true;
   if (NO_BODY_STATUS.has(response.status)) return true;
@@ -258,7 +247,6 @@ async function parseErrorBody(response: Response, method: string): Promise<unkno
 
   const mediaType = getMediaType(response.headers);
 
-  // Fall back to text when blob() is unavailable (e.g. some React Native builds).
   if (mediaType && !isJsonMediaType(mediaType) && !isTextMediaType(mediaType)) {
     return typeof response.blob === "function" ? response.blob() : response.text();
   }
@@ -315,7 +303,7 @@ async function parseSuccessBody(
       if (typeof response.blob !== "function") {
         throw new TypeError(
           "Blob responses are not supported in this runtime. " +
-            "Use responseType \"json\" or \"text\" instead.",
+            'Use responseType "json" or "text" instead.',
         );
       }
       return response.blob();
@@ -349,8 +337,6 @@ export async function customFetch<T = unknown>(
     headers.set("accept", DEFAULT_JSON_ACCEPT);
   }
 
-  // Attach bearer token when an auth getter is configured and no
-  // Authorization header has been explicitly provided.
   if (_authTokenGetter && !headers.has("authorization")) {
     const token = await _authTokenGetter();
     if (token) {
