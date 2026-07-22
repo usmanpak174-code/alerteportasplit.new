@@ -12,21 +12,34 @@ const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 // ---------------------------------------------------------------------------
-// 1000% PAKKA FIX: Default Base URL ko Vercel par set kar diya hai
+// Module-level configuration
 // ---------------------------------------------------------------------------
-const VERCEL_URL = "https://alerteportasplit.vercel.app";
-let _baseUrl: string | null = VERCEL_URL;
+
+let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
 
+/**
+ * Set a base URL that is prepended to every relative request URL
+ * (i.e. paths that start with `/`).
+ *
+ * Useful for Expo bundles that need to call a remote API server.
+ * Pass `null` to clear the base URL.
+ */
 export function setBaseUrl(url: string | null): void {
-  // Agar koi bhi file Replit ka link bhejne ki koshish kare, to usay block karke Vercel kar do
-  if (url && (url.includes("replit.dev") || url.includes("replit.app"))) {
-    _baseUrl = VERCEL_URL;
-  } else {
-    _baseUrl = url ? url.replace(/\/+$/, "") : VERCEL_URL;
-  }
+  _baseUrl = url ? url.replace(/\/+$/, "") : null;
 }
 
+/**
+ * Register a getter that supplies a bearer auth token. Before every fetch
+ * the getter is invoked; when it returns a non-null string, an
+ * `Authorization: Bearer <token>` header is attached to the request.
+ *
+ * Useful for Expo bundles making token-gated API calls.
+ * Pass `null` to clear the getter.
+ *
+ * NOTE: This function should never be used in web applications where session
+ * token cookies are automatically associated with API calls by the browser.
+ */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
 }
@@ -46,18 +59,8 @@ function isUrl(input: RequestInfo | URL): input is URL {
 }
 
 function applyBaseUrl(input: RequestInfo | URL): RequestInfo | URL {
-  let url = resolveUrl(input);
-
-  // 🔴 HARD OVERRIDE: Agar kisi bhi request mein Replit ka link nazar aaye, usay Vercel se replace kar do
-  if (url.includes("replit.dev") || url.includes("replit.app")) {
-    url = url.replace(/https?:\/\/[^/]+\.replit\.(dev|app)/g, VERCEL_URL);
-    if (typeof input === "string") return url;
-    if (isUrl(input)) return new URL(url);
-    return new Request(url, input as Request);
-  }
-
   if (!_baseUrl) return input;
-  
+  const url = resolveUrl(input);
   // Only prepend to relative paths (starting with /)
   if (!url.startsWith("/")) return input;
 
