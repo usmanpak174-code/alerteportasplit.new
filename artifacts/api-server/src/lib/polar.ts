@@ -1,11 +1,11 @@
 /**
  * Polar.sh checkout integration
- * Product ID: 0358546f-1871-4769-80e7-dfcb7cddd8ab
+ * Product ID: 197b7170-185b-4fa9-89e1-659fd5828502
  */
 
 const POLAR_ACCESS_TOKEN = process.env.POLAR_ACCESS_TOKEN;
 
-const POLAR_PRODUCT_ID = "0358546f-1871-4769-80e7-dfcb7cddd8ab";
+const POLAR_PRODUCT_ID = "197b7170-185b-4fa9-89e1-659fd5828502";
 const POLAR_API = "https://api.polar.sh";
 
 export interface CreateCheckoutResult {
