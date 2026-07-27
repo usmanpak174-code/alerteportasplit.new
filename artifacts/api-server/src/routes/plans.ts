@@ -23,7 +23,7 @@ const PLANS = [
     ],
     popular: false,
     polarProductId: "197b7170-185b-4fa9-89e1-659fd5828502",
-    polarPriceId: "d41e5c07-05cc-4302-b796-fa6a6bd8d0f1",
+    polarPriceId: "197b7170-185b-4fa9-89e1-659fd5828502",
   },
   {
     id: "month",
@@ -40,7 +40,7 @@ const PLANS = [
     ],
     popular: true,
     polarProductId: "a076954a-18cc-4063-99b6-b5694a52807d",
-    polarPriceId: "7697fca2-55dd-47aa-b435-d07c1e6fa1a6",
+    polarPriceId: "a076954a-18cc-4063-99b6-b5694a52807d",
   },
   {
     id: "two-months",
@@ -58,7 +58,7 @@ const PLANS = [
     ],
     popular: false,
     polarProductId: "aec4bb6f-a89b-4a32-8065-cb5041c4bccd",
-    polarPriceId: "4fbdb18e-7538-4ca8-8a65-1402b4d26ecb",
+    polarPriceId: "aec4bb6f-a89b-4a32-8065-cb5041c4bccd",
   },
 ];
 
